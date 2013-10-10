@@ -1,0 +1,34 @@
+~PLAYER~
+- Put player onto gui
+- Make player move
+
+
+
+
+
+
+~Computer~
+- Make computer chase player
+
+
+
+
+
+~MAIN MENU~
+
+
+
+
+
+~SHOT~
+
+
+
+
+
+~CAMPAIN~
+
+
+
+
+~POWERUP~
