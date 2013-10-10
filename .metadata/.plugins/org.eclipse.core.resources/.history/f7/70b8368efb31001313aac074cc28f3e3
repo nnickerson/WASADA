@@ -1,0 +1,472 @@
+package wasada;
+
+import java.applet.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.Random;
+
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.Timer;
+
+/**
+ * author Jacob Demmith
+ **/
+public class WasadaGame extends Applet implements Runnable, KeyListener {
+	static final long serialVersionUID = 1L;
+	Thread thread;
+	Dimension dim;
+	Image img;
+	Graphics g;
+	long endTime, startTime, framePeriod;
+	Player player;
+	JLabel instruct;
+	boolean paused, shooting;
+	Shot[] shots;
+	Computer[] computer;
+	double computerRadius;
+	int level, counter, killCount = 0, experienceCount = 0, computerNumHits,
+			computerNumSplit, numcomputer, numShots, playerLife;
+	JButton button = new JButton("Hello");
+	Random gen = new Random();
+	Color userColor, playersChosenColor;
+	Graphics thisGraphic;
+	MenuBar menuBar;
+	Menu menu, playerColorMenu, playerColor, computerDifficulty;
+	private MenuItem normalComputer, saveGameMenu, loadGameMenu, hardComputer,
+			yellowPlayer, greenPlayer, redPlayer;
+	private String mode = "Normal", fileLocation = "C://Temp//WASADA.txt";
+	private LifeBar lifeBar;
+	private Timer fpsTimer;
+	private SaveGame saveGame;
+	private int fps;
+	private int lastFPSCount;
+	private FPSDisplay fpsd;
+	ObjectOutputStream oOS;
+	ObjectInputStream oIS;
+
+	/**
+	 * This initializes my variable with values
+	 */
+	public void init() {
+		menuBar = new MenuBar();
+		playersChosenColor = Color.red;
+		fps = 0;
+		thisGraphic = this.getGraphics();
+		fpsTimer = new Timer(1000,new FPSTimer());
+		fpsTimer.start();
+		lifeBar = new LifeBar();
+		fpsd = new FPSDisplay();
+		playerLife = 100;
+		resize(500, 500);
+		endTime = 0;
+		startTime = 0;
+		framePeriod = 25;
+		addKeyListener(this);
+		dim = getSize();
+		img = createImage(dim.width, dim.height);
+		g = img.getGraphics();
+		thread = new Thread(this);
+		thread.start();
+		shots = new Shot[41];
+		numcomputer = 0;
+		level = 10000;
+		computerRadius = 16;
+		computerNumHits = 1;
+		computerNumSplit = 2;
+		button.setBounds(200, 200, 200, 200);
+		button.addActionListener(new ButtonListener());
+		userColor = Color.blue;
+		getFrame();
+	}
+
+	public void getFrame() {
+		Object f = getParent();
+		while (!(f instanceof Frame)) {
+			f = ((Component) f).getParent();
+		}
+		Frame frame = (Frame) f;
+
+		menuBar.add(menu = new Menu("Menu"));
+
+		menu.add(playerColor = new Menu("Player Color"));
+
+		playerColor.add(redPlayer = new MenuItem("Red"));
+		playerColor.add(greenPlayer = new MenuItem("Green"));
+		playerColor.add(yellowPlayer = new MenuItem("Yellow"));
+
+		menu.add(computerDifficulty = new Menu("Computer Difficulty"));
+		computerDifficulty.add(normalComputer = new MenuItem("Normal"));
+		computerDifficulty.add(hardComputer = new MenuItem("Hard"));
+
+		menu.add(saveGameMenu = new MenuItem("Save Game"));
+
+		menu.add(loadGameMenu = new MenuItem("Load Game"));
+
+		redPlayer.addActionListener(new Menuhandler());
+		yellowPlayer.addActionListener(new Menuhandler());
+		greenPlayer.addActionListener(new Menuhandler());
+
+		normalComputer.addActionListener(new Menuhandler());
+		hardComputer.addActionListener(new Menuhandler());
+
+		saveGameMenu.addActionListener(new Menuhandler());
+		loadGameMenu.addActionListener(new Menuhandler());
+
+		frame.setMenuBar(menuBar);
+		frame.setSize(new Dimension(507, 575));
+		frame.setResizable(false);
+	}
+
+	/**
+	 * This methods sets up the next level with more computer.
+	 */
+	public void setUpNextLevel() {
+		level++;
+		player = new Player(250, 250, 0, .35, .8, .2, 10);
+		numShots = 0;
+		paused = true;
+		playerLife = 100;
+		shooting = false;
+		computer = new Computer[level
+				* (int) Math.pow(computerNumSplit, computerNumHits - 1) + 1];
+		numcomputer = level;
+		for (int i = 0; i < numcomputer; i++)
+			computer[i] = new Computer(RandomGenX(), RandomGenY(), computerRadius,
+					computerNumHits, computerNumSplit);
+	}
+
+	public int RandomGenX() {
+		int x = gen.nextInt(500);
+		if (x > 150 && x < 350) {
+			x += 200;
+		}
+		return x;
+	}
+
+	public int RandomGenY() {
+		int y = gen.nextInt(500);
+		if (y > 150 && y < 350) {
+			y += 200;
+		}
+		return y;
+	}
+
+	/**
+	 * This method will paint my background, computer, player, and shots.
+	 */
+	public void paint(Graphics gfx) {
+		counter = 0;
+		fps++;
+		while (counter == 0) {
+			g.setColor(Color.black);
+			g.fillRect(0, 0, 500, 500);
+			for (int i = 0; i < numShots; i++)
+				shots[i].draw(g);
+			for (int i = 0; i < numcomputer; i++)
+				computer[i].draw(g, userColor);
+			player.draw(g, playersChosenColor);
+			g.setColor(Color.cyan);
+			g.drawString("Level " + level, 20, 20);
+			counts();
+			lifeBar.draw(g, playerLife);
+			gfx.drawImage(img, 0, 0, this);
+			counter++;
+		}
+		if (player.isActive() && !paused) {
+			g.setColor(Color.black);
+			g.fillRect(0, 0, 500, 500);
+			for (int i = 0; i < numShots; i++)
+				shots[i].draw(g);
+			for (int i = 0; i < numcomputer; i++)
+				computer[i].draw(g, userColor);
+			player.draw(g, playersChosenColor);
+			g.setColor(Color.cyan);
+			g.drawString("Level " + level, 20, 20);
+			counts();
+			lifeBar.draw(g, playerLife);
+			gfx.drawImage(img, 0, 0, this);
+		}
+		fpsd.draw(gfx, lastFPSCount);
+	}
+
+	/**
+	 * Repaints everything to be updated.
+	 */
+	public void update(Graphics gfx) {
+		
+		paint(gfx);
+	}
+
+	/**
+ * 
+ */
+	public void run() {
+		for (;;) {
+			startTime = System.currentTimeMillis();
+			if (numcomputer <= 0)
+				setUpNextLevel();
+
+			if (!paused) {
+				player.move(dim.width, dim.height);
+
+				for (int i = 0; i < numShots; i++) {
+					shots[i].move(dim.width, dim.height);
+					if (shots[i].getLifeLeft() <= 0) {
+						deleteShot(i);
+						i--;
+					}
+				}
+				updatecomputer();
+				if (shooting && player.canShoot()) {
+					shots[numShots] = player.shoot();
+					numShots++;
+				}
+			}
+			repaint();
+			try {
+				endTime = System.currentTimeMillis();
+				if (framePeriod - (endTime - startTime) > 0)
+					Thread.sleep(framePeriod - (endTime - startTime));
+			} catch (InterruptedException e) {
+			}
+		}
+	}
+
+	/**
+	 * deletes the shots.
+	 */
+	private void deleteShot(int index) {
+		numShots--;
+		for (int i = index; i < numShots; i++)
+			shots[i] = shots[i + 1];
+		shots[numShots] = null;
+	}
+
+	/**
+	 * removes computer after last hit.
+	 */
+	private void deleteComputer(int index) {
+		try {
+			numcomputer--;
+			for (int i = index; i < numcomputer; i++)
+				computer[i] = computer[i + 1];
+			computer[numcomputer] = null;
+		} catch (ArrayIndexOutOfBoundsException excpetion) {
+		}
+	}
+
+	/**
+	 * Adds computer
+	 */
+	private void addComputer(Computer comp) {
+		computer[numcomputer] = comp;
+		numcomputer++;
+	}
+
+	private void updatecomputer() {
+		for (int i = 0; i < numcomputer; i++) {
+			computer[i].move((int) player.getX(), (int) player.getY());
+
+			if (mode.equals("Hard")) {
+				computer[i].move((int) player.getX(), (int) player.getY());
+			}
+			if (computer[i].playerCollision(player)) {
+				if (playerLife > 0) {
+					playerLife -= 1;
+				} else {
+					level -= 2;
+					numcomputer = 0;
+					experienceCount -= 13;
+					playerLife = 100;
+				}
+			}
+			for (int j = 0; j < numShots; j++) {
+				if (computer[i].shotCollision(shots[j])) {
+					deleteShot(j);
+					killCount++;
+
+					if (mode.equals("Hard")) {
+						experienceCount += 40;
+					}
+					if (mode.equals("Normal")) {
+						experienceCount += 25;
+					}
+
+					if (computer[i].getHitsLeft() > 1) {
+						for (int k = 0; k < computer[i].getNumSplit(); k++)
+							addComputer(computer[i].createSplitComputer());
+					}
+
+					deleteComputer(i);
+					j = numShots;
+					i--;
+				}
+			}
+		}
+	}
+
+	public void keyPressed(KeyEvent e) {
+		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+			if (!player.isActive() && !paused) {
+				player.setActive(true);
+			}
+
+			else {
+				paused = !paused;
+				if (paused) {
+					player.setActive(false);
+
+				} else
+					player.setActive(true);
+			}
+		} else if (paused || !player.isActive())
+			return;
+
+		else if (e.getKeyCode() == KeyEvent.VK_UP)
+			player.setAccelerating(true);
+
+		else if (e.getKeyCode() == KeyEvent.VK_LEFT)
+			player.setTurningLeft(true);
+
+		else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+			player.setTurningRight(true);
+
+		else if (e.getKeyCode() == KeyEvent.VK_SPACE
+				|| e.getKeyCode() == KeyEvent.VK_CONTROL)
+			shooting = true;
+	}
+
+	public void keyReleased(KeyEvent e) {
+		if (e.getKeyCode() == KeyEvent.VK_UP)
+			player.setAccelerating(false);
+
+		else if (e.getKeyCode() == KeyEvent.VK_LEFT)
+			player.setTurningLeft(false);
+
+		else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+			player.setTurningRight(false);
+
+		else if (e.getKeyCode() == KeyEvent.VK_SPACE
+				|| e.getKeyCode() == KeyEvent.VK_CONTROL)
+			shooting = false;
+	}
+
+	public void keyTyped(KeyEvent e) {
+	}
+
+	private class ButtonListener implements ActionListener {
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if (e.getSource() == button) {
+				remove(button);
+			}
+
+		}
+
+	}
+	
+	public class FPSTimer implements ActionListener{
+
+		@Override
+		public void actionPerformed(ActionEvent arg0) {
+			lastFPSCount = fps;
+			fps = 0;			
+		}
+		
+	}
+
+	public class Menuhandler implements ActionListener {
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if (e.getSource() == redPlayer) {
+				playersChosenColor = Color.RED;
+			}
+			if (e.getSource() == greenPlayer) {
+				playersChosenColor = Color.GREEN;
+			}
+			if (e.getSource() == yellowPlayer) {
+				playersChosenColor = Color.YELLOW;
+			}
+
+			if (e.getSource() == normalComputer) {
+				mode = "Normal";
+			}
+
+			if (e.getSource() == hardComputer) {
+				mode = "Hard";
+			}
+
+			if (e.getSource() == saveGameMenu) {
+				saveGame = new SaveGame(killCount, experienceCount, level);
+
+				try {
+					oOS = new ObjectOutputStream(new FileOutputStream(
+							fileLocation));
+
+					oOS.writeObject(saveGame);
+
+					oOS.flush();
+					oOS.close();
+				} catch (IOException ex) {
+					System.out
+							.println("There was an error while trying to save the game.");
+				}
+			}
+
+			if (e.getSource() == loadGameMenu) {
+
+				try {
+
+					oIS = new ObjectInputStream(new FileInputStream(
+							fileLocation));
+
+					try {
+						saveGame = (SaveGame) oIS.readObject();
+					} catch (ClassNotFoundException e1) {
+						System.out.println("Error while reading file.");
+					}
+
+					killCount = saveGame.getKillCount();
+					System.out.println(killCount);
+					System.out.println(experienceCount);
+
+					experienceCount = saveGame.getExperienceCount();
+
+					level = saveGame.getLevel() - 1;
+
+					oIS.close();
+
+					setUpNextLevel();
+				} catch (IOException ex) {
+					System.out
+							.println("There was an error while trying to save the game.");
+				}
+			}
+		}
+	}
+
+	/**
+	 * ALL DONE LAST NIGHT
+	 */
+
+	public void counts() {
+		g.drawString("Kills " + killCount, 20, 40);
+		g.drawString("Experience " + experienceCount, 20, 60);
+	}
+
+	public int getLevel() {
+		return level;
+	}
+
+	public static void main(String[] args) {
+
+	}
+}

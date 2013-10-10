@@ -12,6 +12,7 @@ import java.util.Random;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.Timer;
 
 /**
  * author Jacob Demmith
@@ -34,14 +35,18 @@ public class WasadaGame extends Applet implements Runnable, KeyListener {
 	JButton button = new JButton("Hello");
 	Random gen = new Random();
 	Color userColor, playersChosenColor;
+	Graphics thisGraphic;
 	MenuBar menuBar;
 	Menu menu, playerColorMenu, playerColor, computerDifficulty;
 	private MenuItem normalComputer, saveGameMenu, loadGameMenu, hardComputer,
 			yellowPlayer, greenPlayer, redPlayer;
 	private String mode = "Normal", fileLocation = "C://Temp//WASADA.txt";
 	private LifeBar lifeBar;
+	private Timer fpsTimer;
 	private SaveGame saveGame;
-	private FPSDisplay fps;
+	private int fps;
+	private int lastFPSCount;
+	private FPSDisplay fpsd;
 	ObjectOutputStream oOS;
 	ObjectInputStream oIS;
 
@@ -51,9 +56,12 @@ public class WasadaGame extends Applet implements Runnable, KeyListener {
 	public void init() {
 		menuBar = new MenuBar();
 		playersChosenColor = Color.red;
-
+		fps = 0;
+		thisGraphic = this.getGraphics();
+		fpsTimer = new Timer(1000,new FPSTimer());
+		fpsTimer.start();
 		lifeBar = new LifeBar();
-		fps = new FPSDisplay();
+		fpsd = new FPSDisplay();
 		playerLife = 100;
 		resize(500, 500);
 		endTime = 0;
@@ -154,7 +162,7 @@ public class WasadaGame extends Applet implements Runnable, KeyListener {
 	 */
 	public void paint(Graphics gfx) {
 		counter = 0;
-		fps.draw(gfx, 1);
+		fps++;
 		while (counter == 0) {
 			g.setColor(Color.black);
 			g.fillRect(0, 0, 500, 500);
@@ -182,15 +190,16 @@ public class WasadaGame extends Applet implements Runnable, KeyListener {
 			g.drawString("Level " + level, 20, 20);
 			counts();
 			lifeBar.draw(g, playerLife);
-			fps.draw(gfx, 1);
 			gfx.drawImage(img, 0, 0, this);
 		}
+		fpsd.draw(gfx, lastFPSCount);
 	}
 
 	/**
 	 * Repaints everything to be updated.
 	 */
 	public void update(Graphics gfx) {
+		
 		paint(gfx);
 	}
 
@@ -262,7 +271,6 @@ public class WasadaGame extends Applet implements Runnable, KeyListener {
 
 	private void updatecomputer() {
 		for (int i = 0; i < numcomputer; i++) {
-			fps.draw(g, 1);
 			computer[i].move((int) player.getX(), (int) player.getY());
 
 			if (mode.equals("Hard")) {
@@ -363,6 +371,16 @@ public class WasadaGame extends Applet implements Runnable, KeyListener {
 		}
 
 	}
+	
+	public class FPSTimer implements ActionListener{
+
+		@Override
+		public void actionPerformed(ActionEvent arg0) {
+			lastFPSCount = fps;
+			fps = 0;			
+		}
+		
+	}
 
 	public class Menuhandler implements ActionListener {
 
@@ -442,7 +460,6 @@ public class WasadaGame extends Applet implements Runnable, KeyListener {
 	public void counts() {
 		g.drawString("Kills " + killCount, 20, 40);
 		g.drawString("Experience " + experienceCount, 20, 60);
-		fps.draw(g, 1);
 	}
 
 	public int getLevel() {

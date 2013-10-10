@@ -167,7 +167,7 @@ while(counter == 0)
 {
 	g.setColor(Color.black);
 	g.fillRect(0,0,500,500);
-	fps.draw(gfx, 1);
+	//fps.draw(gfx);
 	for(int i=0;i<numShots;i++) 
 	shots[i].draw(g);
 	for(int i=0;i<numAsteroids;i++)
