@@ -1,0 +1,26 @@
+- Implement Store
+	- Speed Boost upgrade
+	- Firing Rate upgrade
+	- Teleport upgrade
+	- Invulnerability upgrade
+	- Turn faster upgrade
+	- Wrap around upgrade
+	- Firery Barrier upgrade
+	- Nuke upgrade
+	- Extra health upgrade
+
+- Make enemies spawn around the player instead of the corners
+- Enemy collision
+- Bosses
+
+- Multiplayer
+	- 2 Players per keyboard
+	- Networking for campaign
+	- 2 Player battle
+	- Lobby
+	
+
+	
+
+	
+
