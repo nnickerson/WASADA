@@ -39,7 +39,7 @@ public class WasadaGame extends Applet implements Runnable, KeyListener {
 	MenuBar menuBar;
 	Menu menu, playerColorMenu, playerColor, computerDifficulty, storeMenu;
 	private MenuItem normalComputer, saveGameMenu, loadGameMenu, hardComputer,
-			yellowPlayer, greenPlayer, redPlayer, speedBoost, firingRate;
+			yellowPlayer, greenPlayer, redPlayer, speedBoost;
 	private String mode = "Normal", fileLocation = "C://Temp//WASADA.txt";
 	private LifeBar lifeBar;
 	private Timer fpsTimer;
@@ -49,8 +49,6 @@ public class WasadaGame extends Applet implements Runnable, KeyListener {
 	private FPSDisplay fpsd;
 	ObjectOutputStream oOS;
 	ObjectInputStream oIS;
-	double playerSpeed = 0.35;
-	int shotDelay = 10;
 
 	/**
 	 * This initializes my variable with values
@@ -100,9 +98,7 @@ public class WasadaGame extends Applet implements Runnable, KeyListener {
 		menu.add(playerColor = new Menu("Player Color"));
 		
 		storeMenu.add(speedBoost = new MenuItem("Speed Boost - 100"));
-		storeMenu.add(firingRate = new MenuItem("Firing Rate Increase - 125"));
 		speedBoost.addActionListener(new Menuhandler());
-		firingRate.addActionListener(new Menuhandler());
 
 		playerColor.add(redPlayer = new MenuItem("Red"));
 		playerColor.add(greenPlayer = new MenuItem("Green"));
@@ -136,7 +132,7 @@ public class WasadaGame extends Applet implements Runnable, KeyListener {
 	 */
 	public void setUpNextLevel() {
 		level++;
-		player = new Player(250, 250, 0, playerSpeed, .8, .2, shotDelay);
+		player = new Player(250, 250, 0, .35, .8, .2, 10);
 		numShots = 0;
 		paused = true;
 		playerLife = 100;
@@ -395,17 +391,7 @@ public class WasadaGame extends Applet implements Runnable, KeyListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			if(e.getSource() == speedBoost) {
-				if(experienceCount >= 100) {
-					playerSpeed = playerSpeed + 0.1;
-					experienceCount = experienceCount - 100;
-				}
-			}
-			if(e.getSource() == firingRate) {
-				if(experienceCount >= 125) {
-					shotDelay = shotDelay - 1;
-//					shotDelayLeft = 5;
-					experienceCount = experienceCount - 125;
-				}
+				player.acceleration = player.acceleration+100.0;
 			}
 			if (e.getSource() == redPlayer) {
 				playersChosenColor = Color.RED;

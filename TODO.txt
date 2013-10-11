@@ -19,6 +19,7 @@
 	- 2 Player battle
 	- Lobby
 	
+- Add dropped items to be picked up
 
 	
 
